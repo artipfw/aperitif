@@ -14,7 +14,7 @@ from agno.agent import Agent
 from agno.models.openai import OpenAILike
 from agno.tools import tool
 
-DEFAULT_ADDRESS = "208 Anza St, San Francisco, CA"
+DEFAULT_ADDRESS: str = "208 Anza St, San Francisco, CA"
 HTML_PORT = 8080
 OUTPUT_PNG = "google_screenshot.png"
 
@@ -22,7 +22,7 @@ logging.basicConfig(level=logging.INFO)
 
 
 @tool(show_result=True)
-def get_hoodmaps() -> str:
+def hoodmaps(address: str = DEFAULT_ADDRESS) -> str:
     """Captures a screenshot of the San Francisco map from hoodmaps.com."""
     
     async def capture():
@@ -45,6 +45,7 @@ def get_hoodmaps() -> str:
             await page.screenshot(path=output_path, full_page=True)
 
             await browser.close()
+            logging.info(f"Screenshot saved to {output_path}")
             return output_path
 
     # Run the async capture function
@@ -125,7 +126,7 @@ async def take_screenshot():
 
 
 @tool(show_result=True)
-def get_googlemaps(address: str = DEFAULT_ADDRESS) -> str:
+def googlemaps(address: str = DEFAULT_ADDRESS) -> str:
     """
     Takes an address, shows it on a Google Map, and saves a screenshot as 'google_screenshot.png'.
     Returns the file path of the saved screenshot.
@@ -155,28 +156,30 @@ def get_googlemaps(address: str = DEFAULT_ADDRESS) -> str:
         server.shutdown()
         server.server_close()
 
-    return f"Screenshot saved to {OUTPUT_PNG}"
+    return f"{OUTPUT_PNG}"
 
 
 def main():
-    tt_base_url = "https://elderly-cherie-metal-fiefs-0z-0d239a6a.koyeb.app/v1"
-    model_id = "meta-llama/Llama-3.2-1B-Instruct"
-
+    tt_base_url = os.getenv("TT_BASE_URL")
+    model_id = os.getenv("TT_MODEL_ID")
 
     agent = Agent(
-        name="MapAgent",
-        description="An agent that can access maps and provide images with specific locations.",
         model=OpenAILike(id=model_id, api_key="nul", base_url=tt_base_url),
-        tools=[get_hoodmaps, get_googlemaps],
+        tools=[hoodmaps, googlemaps],
         instructions="""
-        You are a Map Agent that can access various mapping services to provide images with specific locations.
-        You can use the tools provided to get images from Hoodmaps and Google Maps.
-        When asked about locations, you should use both tools to fetch the necessary data.
+        You are a Map Agent with access to two mapping tools.
+
+        Your job is to always call **both tools** to retrieve images.
+
+        - Do not interpret or describe the images.
+        - Your job is only to call both tools and return the file names.
+
+        When done, end the task silently — no commentary or explanation.
         """,
         markdown=True
     )
 
-    user_query = "Is 208 Anza St, San Francisco, CA a good neighborhood to live in?"
+    user_query = "Please retrieve images of the location 208 Anza St, San Francisco, CA from both tools."
     agent.print_response(user_query, stream=True)
 
 if __name__ == "__main__":
