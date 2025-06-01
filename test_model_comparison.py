@@ -1,72 +1,66 @@
 #!/usr/bin/env python3
 """
-Comprehensive test showing Phi-4 limitations and OpenAI solution
+Test vision agents' ability to map pins between uncolored and colored maps
 """
 
 import os
+import argparse
 from agents.vision_agent import VisionAgent
 
-def test_phi4_limitations():
-    """Test Phi-4 with both simple and complex images to show its limitations"""
+def display_result(result, test_name):
+    """Display analysis results in a clean, presentation-ready format"""
+    print(f"\n🤖 Model: {result['model_used']}")
+    print(f"🔍 Method: {result.get('method', 'two-image-comparison')}")
+    print(f"✨ Success: {'✅ Yes' if result['success'] else '❌ No'}")
+    
+    if result['success']:
+        print(f"\n📊 ANALYSIS RESULTS:")
+        print(f"{result['raw_analysis']}")
+        
+        if result['neighborhood_type']:
+            print(f"\n🎯 FINAL CLASSIFICATION:")
+            print(f"   Neighborhood: {result['neighborhood_type']}")
+            print(f"   Color Zone: {result['neighborhood_info']['color']}")
+            print(f"   Description: {result['neighborhood_info']['description']}")
+            print(f"   Test: {test_name} ✅")
+        else:
+            print(f"\n⚠️  Could not determine specific neighborhood type")
+    else:
+        print(f"\n❌ Error: {result['error']}")
+    
+    print()
+
+def test_phi4_pin_mapping():
+    """Test Phi-4's ability to map pins between images"""
     print("=" * 80)
-    print("PART 1: Testing Phi-4 Vision Model")
+    print("🚀 Testing Phi-4 Vision Model - Pin Mapping")
     print("=" * 80)
     
     # Initialize Phi-4 agent
     phi4_agent = VisionAgent(use_openai=False)
     
-    # Test 1: Simple test image (should work)
-    print("\nTest 1: Simple colored map (test_images/pin_map.png)")
-    print("-" * 50)
+    print("\n🗺️  PHI-4 TEST: San Francisco Map Analysis")
+    print("Pin location: Painted Ladies area")
+    print("-" * 60)
     
-    if os.path.exists("test_images/pin_map.png"):
-        result = phi4_agent.analyze("test_images/pin_map.png")
-        
-        print(f"Model: {result['model_used']}")
-        print(f"Success: {result['success']}")
-        
-        if result['success']:
-            print(f"\nAnalysis: {result['raw_analysis'][:200]}...")
-            if result['neighborhood_type']:
-                print(f"\n✅ Detected neighborhood: {result['neighborhood_type']}")
-            else:
-                print("\n⚠️  Failed to detect neighborhood type")
-        else:
-            print(f"❌ Error: {result['error']}")
+    pin_map_path = "test_images/sf_map_with_pin.png"
+    colored_map_path = "test_images/sf_map_original.png"
+    
+    print(f"📍 Pin map: {pin_map_path}")
+    print(f"🎨 Reference map: {colored_map_path}")
+    
+    if os.path.exists(pin_map_path) and os.path.exists(colored_map_path):
+        result = phi4_agent.analyze_with_reference(pin_map_path, colored_map_path)
+        display_result(result, "Phi-4 SF Analysis")
     else:
-        print("❌ test_images/pin_map.png not found")
-    
-    # Test 2: Complex real-world map (likely to fail)
-    print("\n\nTest 2: Complex San Francisco map (example_image.png)")
-    print("-" * 50)
-    
-    if os.path.exists("example_image.png"):
-        result = phi4_agent.analyze("example_image.png")
-        
-        print(f"Model: {result['model_used']}")
-        print(f"Success: {result['success']}")
-        
-        if result['success']:
-            print(f"\nAnalysis (first 300 chars): {result['raw_analysis'][:300]}...")
-            if "Pix" in result['raw_analysis'] or "idden" in result['raw_analysis']:
-                print("\n❌ Phi-4 returned gibberish output (contains 'Pix', 'idden', etc.)")
-            elif result['neighborhood_type']:
-                print(f"\n✅ Detected neighborhood: {result['neighborhood_type']}")
-            else:
-                print("\n⚠️  Failed to detect neighborhood type")
-        else:
-            print(f"❌ Error: {result['error']}")
-    else:
-        print("❌ example_image.png not found")
+        print("❌ Required test images not found")
     
     print("\n" + "=" * 50)
-    print("CONCLUSION: Phi-4 works well with simple images but struggles with complex maps")
-    print("=" * 50)
 
-def test_openai_solution():
-    """Test OpenAI's vision model as the solution"""
+def test_openai_pin_mapping():
+    """Test OpenAI's ability to map pins between uncolored and colored maps"""
     print("\n\n" + "=" * 80)
-    print("PART 2: Testing OpenAI GPT-4 Vision Model")
+    print("🤖 Testing OpenAI GPT-4 Vision Model - Pin Mapping")
     print("=" * 80)
     
     # Check for API key
@@ -79,77 +73,86 @@ def test_openai_solution():
     # Initialize OpenAI agent
     openai_agent = VisionAgent(use_openai=True)
     
-    # Test 1: Original SF map (example_image.png)
-    print("\nTest 1: Original San Francisco map (example_image.png)")
-    print("-" * 50)
+    # Test 1: SF Map with Painted Ladies Pin
+    print("\n🗺️  TEST 1: San Francisco Map Analysis")
+    print("Pin location: Painted Ladies area")
+    print("-" * 60)
     
-    if os.path.exists("example_image.png"):
-        result = openai_agent.analyze("example_image.png")
-        
-        print(f"Model: {result['model_used']}")
-        print(f"Success: {result['success']}")
-        
-        if result['success']:
-            print(f"\nAnalysis:\n{result['raw_analysis']}")
-            if result['neighborhood_type']:
-                print(f"\n✅ Detected neighborhood: {result['neighborhood_type']}")
-                print(f"📍 Color: {result['neighborhood_info']['color']}")
-                print(f"📝 Description: {result['neighborhood_info']['description']}")
-            else:
-                print("\n⚠️  No specific neighborhood type detected in response")
-        else:
-            print(f"❌ Error: {result['error']}")
+    pin_map_path = "test_images/sf_map_with_pin.png"
+    colored_map_path = "test_images/sf_map_original.png"
+    
+    print(f"📍 Pin map: {pin_map_path}")
+    print(f"🎨 Reference map: {colored_map_path}")
+    
+    if os.path.exists(pin_map_path) and os.path.exists(colored_map_path):
+        result = openai_agent.analyze_with_reference(pin_map_path, colored_map_path)
+        display_result(result, "SF Painted Ladies")
     else:
-        print("❌ example_image.png not found")
+        print("❌ Required images not found")
     
-    # Test 2: SF map with added pin
-    print("\n\nTest 2: San Francisco map with added pin (test_images/sf_map_with_pin.png)")
-    print("-" * 50)
+    print("\n" + "="*60)
     
-    if os.path.exists("test_images/sf_map_with_pin.png"):
-        result = openai_agent.analyze("test_images/sf_map_with_pin.png")
-        
-        print(f"Model: {result['model_used']}")
-        print(f"Success: {result['success']}")
-        
-        if result['success']:
-            print(f"\nAnalysis:\n{result['raw_analysis']}")
-            if result['neighborhood_type']:
-                print(f"\n✅ Detected neighborhood: {result['neighborhood_type']}")
-                print(f"📍 Color: {result['neighborhood_info']['color']}")
-                print(f"📝 Description: {result['neighborhood_info']['description']}")
-            else:
-                print("\n⚠️  No specific neighborhood type detected in response")
-        else:
-            print(f"❌ Error: {result['error']}")
-    else:
-        print("❌ test_images/sf_map_with_pin.png not found")
+    # # Test 2: General Pin Map and Region Map
+    # print("\n🗺️  TEST 2: Generic Pin Map Analysis") 
+    # print("Testing with different pin/region map pair")
+    # print("-" * 60)
     
-    print("\n" + "=" * 50)
-    print("CONCLUSION: OpenAI's model successfully analyzes complex maps")
-    print("=" * 50)
+    # pin_map_path2 = "test_images/pin_map.png"
+    # region_map_path = "test_images/region_map.png"
+    
+    # print(f"📍 Pin map: {pin_map_path2}")
+    # print(f"🎨 Reference map: {region_map_path}")
+    
+    # if os.path.exists(pin_map_path2) and os.path.exists(region_map_path):
+    #     result = openai_agent.analyze_with_reference(pin_map_path2, region_map_path)
+    #     display_result(result, "Generic Pin Map")
+    # else:
+    #     print("❌ Required images not found")
+    
+
 
 def main():
-    print("San Francisco Neighborhood Detection - Model Comparison")
-    print("This test demonstrates why we need to use OpenAI's vision model")
+    parser = argparse.ArgumentParser(
+        description="🗺️  Test vision models' ability to map pins between colored and uncolored maps"
+    )
+    parser.add_argument(
+        "--skip-phi", 
+        action="store_true", 
+        help="Skip Phi-4 model tests and only run OpenAI tests"
+    )
+    parser.add_argument(
+        "--only-phi",
+        action="store_true",
+        help="Only run Phi-4 model tests"
+    )
+    
+    args = parser.parse_args()
+    
+    print("🌟 VISION MODEL COMPARISON - PIN MAPPING TEST")
+    print("🎯 Testing ability to map pins between uncolored and colored maps")
+    print("📍 Using San Francisco neighborhood data")
     print()
     
-    # Part 1: Show Phi-4 limitations
-    test_phi4_limitations()
+    # Run tests based on arguments
+    if args.only_phi:
+        test_phi4_pin_mapping()
+    elif args.skip_phi:
+        test_openai_pin_mapping()
+    else:
+        # Run both by default
+        test_phi4_pin_mapping()
+        test_openai_pin_mapping()
     
-    # Part 2: Show OpenAI solution
-    test_openai_solution()
-    
-    print("\n\n" + "=" * 80)
-    print("FINAL RECOMMENDATION")
-    print("=" * 80)
-    print("While Phi-4 is a capable model for simple vision tasks, it struggles with:")
-    print("- Complex, high-resolution images")
-    print("- Images with lots of text and UI elements")
-    print("- Real-world screenshots and maps")
-    print("\nFor production use with San Francisco neighborhood maps, we recommend")
-    print("using OpenAI's GPT-4 Vision model for accurate results.")
-    print("=" * 80)
+    if not args.only_phi:
+        print("\n\n" + "=" * 80)
+        print("📊 SUMMARY & CAPABILITIES")
+        print("=" * 80)
+        print("✨ This test evaluates models' ability to:")
+        print("   🔍 1. Identify pin locations in maps")
+        print("   🎨 2. Map locations to colored neighborhood zones")
+        print("   🏠 3. Classify neighborhood types accurately")
+        print("   📐 4. Handle different map scales and formats")
+        print("=" * 80)
 
 if __name__ == "__main__":
     main()
