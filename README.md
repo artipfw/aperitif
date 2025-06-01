@@ -19,6 +19,9 @@ uv run python main.py --vision
 
 # Interactive mode
 uv run python main.py
+
+# Tool calling example (latest demo)
+uv run python tool_calling.py
 ```
 
 ## Components
